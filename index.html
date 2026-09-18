@@ -171,11 +171,6 @@
   }
   .cell.marked .label { color: var(--marked-ink); }
   .cell.marked .rarity-badge { color: var(--marked-ink); opacity: 0.7; }
-  .cell.free {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
-  .cell.free .label, .cell.free .icon { color: #fff; }
   .cell.marked::after {
     content: "✓";
     position: absolute;
@@ -243,7 +238,7 @@
 <div class="status" id="status"></div>
 <div class="score" id="score"></div>
 
-<footer>Freifeld zählt automatisch. Nochmal antippen entfernt ein Feld wieder. „Neue Karte“ startet komplett neu.</footer>
+<footer>Nochmal antippen entfernt ein Feld wieder. „Neue Karte“ startet komplett neu.</footer>
 
 <script>
 // Rarity pools based on how likely a sighting/activity actually is in an ~80ha park
@@ -297,7 +292,7 @@ const RARITY_META = {
   rare:     { points: 3 }
 };
 
-const STORAGE_KEY = "hochwildpark-bingo-v1";
+const STORAGE_KEY = "hochwildpark-bingo-v2";
 let cardItems = [];
 let markedSet = new Set();
 
@@ -328,7 +323,7 @@ function loadState() {
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.cardItems) || parsed.cardItems.length !== 16) return false;
     cardItems = parsed.cardItems;
-    markedSet = new Set(parsed.marked || [5]);
+    markedSet = new Set(parsed.marked || []);
     return true;
   } catch (e) {
     return false;
@@ -336,17 +331,14 @@ function loadState() {
 }
 
 function buildCard() {
-  // 8 häufig, 5 mittel, 2 selten + 1 Freifeld = 16 Felder
+  // 9 häufig, 5 mittel, 2 selten = 16 Felder
   const chosen = [
-    ...shuffle(COMMON).slice(0, 8).map(i => ({ ...i, rarity: "common" })),
+    ...shuffle(COMMON).slice(0, 9).map(i => ({ ...i, rarity: "common" })),
     ...shuffle(UNCOMMON).slice(0, 5).map(i => ({ ...i, rarity: "uncommon" })),
     ...shuffle(RARE).slice(0, 2).map(i => ({ ...i, rarity: "rare" }))
   ];
-  const shuffled = shuffle(chosen);
-  const withFree = [...shuffled];
-  withFree.splice(5, 0, { icon: "🌲", label: "Freifeld", free: true });
-  cardItems = withFree;
-  markedSet = new Set([5]);
+  cardItems = shuffle(chosen);
+  markedSet = new Set();
   saveState();
   render();
 }
@@ -363,13 +355,10 @@ function render() {
   grid.innerHTML = '';
   cardItems.forEach((item, idx) => {
     const cell = document.createElement('div');
-    const rarityClass = item.free ? 'free' : item.rarity;
-    cell.className = 'cell ' + rarityClass + (markedSet.has(idx) ? ' marked' : '');
-    const badge = item.free ? '' : `<div class="rarity-badge">${rarityLabel(item.rarity)}</div>`;
+    cell.className = 'cell ' + item.rarity + (markedSet.has(idx) ? ' marked' : '');
+    const badge = `<div class="rarity-badge">${rarityLabel(item.rarity)}</div>`;
     cell.innerHTML = `${badge}<div class="icon">${item.icon}</div><div class="label">${item.label}</div>`;
-    if (!item.free) {
-      cell.addEventListener('click', () => toggle(idx));
-    }
+    cell.addEventListener('click', () => toggle(idx));
     grid.appendChild(cell);
   });
   checkBingo();
@@ -388,7 +377,7 @@ function toggle(idx) {
 function computeScore() {
   let score = 0;
   cardItems.forEach((item, idx) => {
-    if (markedSet.has(idx) && !item.free && item.rarity) {
+    if (markedSet.has(idx)) {
       score += RARITY_META[item.rarity].points;
     }
   });
@@ -415,7 +404,7 @@ function checkBingo() {
 
 document.getElementById('newCardBtn').addEventListener('click', buildCard);
 document.getElementById('resetBtn').addEventListener('click', () => {
-  markedSet = new Set([5]);
+  markedSet = new Set();
   saveState();
   render();
 });
