@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hochwildpark Rheinland – Bingo</title>
+<style>
+  :root {
+    --bg: #f4f1e8;
+    --card: #ffffff;
+    --ink: #2b3a1f;
+    --accent: #5a7a3a;
+    --accent-dark: #3e5828;
+    --marked: #d9a441;
+    --marked-ink: #3d2b0a;
+    --line: #cfc7ad;
+    --common: #6f9a49;
+    --uncommon: #3f7bb0;
+    --rare: #b0752f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1f16;
+      --card: #262b1d;
+      --ink: #e8e6d8;
+      --accent: #7ba454;
+      --accent-dark: #9bc470;
+      --marked: #b9832c;
+      --marked-ink: #fff6e3;
+      --line: #3c4230;
+      --common: #7fb35a;
+      --uncommon: #6aa8e0;
+      --rare: #d99a4a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1f16;
+    --card: #262b1d;
+    --ink: #e8e6d8;
+    --accent: #7ba454;
+    --accent-dark: #9bc470;
+    --marked: #b9832c;
+    --marked-ink: #fff6e3;
+    --line: #3c4230;
+    --common: #7fb35a;
+    --uncommon: #6aa8e0;
+    --rare: #d99a4a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Georgia', 'Iowan Old Style', serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 10px 40px;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 1.35rem;
+    text-align: center;
+    margin: 4px 0 2px;
+    color: var(--accent-dark);
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.75;
+    margin-bottom: 10px;
+    max-width: 440px;
+  }
+  .legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.72rem;
+    margin-bottom: 14px;
+    opacity: 0.9;
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.common { background: var(--common); }
+  .dot.uncommon { background: var(--uncommon); }
+  .dot.rare { background: var(--rare); }
+  .controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--accent);
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.95); }
+  button.secondary {
+    background: transparent;
+    color: var(--accent-dark);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1 / 1;
+  }
+  .cell {
+    background: var(--card);
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, transform 0.1s ease;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+  }
+  .cell:active { transform: scale(0.95); }
+  .cell.common { border-color: var(--common); }
+  .cell.uncommon { border-color: var(--uncommon); }
+  .cell.rare { border-color: var(--rare); }
+  .cell .icon {
+    font-size: clamp(1.05rem, 5vw, 1.5rem);
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .cell .label {
+    font-size: clamp(0.52rem, 2.3vw, 0.68rem);
+    line-height: 1.15;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .cell .rarity-badge {
+    position: absolute;
+    top: 3px;
+    left: 5px;
+    font-size: 0.55rem;
+    opacity: 0.65;
+    letter-spacing: -1px;
+  }
+  .cell.marked {
+    background: var(--marked);
+    border-color: var(--marked);
+  }
+  .cell.marked .label { color: var(--marked-ink); }
+  .cell.marked .rarity-badge { color: var(--marked-ink); opacity: 0.7; }
+  .cell.free {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .cell.free .label, .cell.free .icon { color: #fff; }
+  .cell.marked::after {
+    content: "✓";
+    position: absolute;
+    top: 2px;
+    right: 6px;
+    font-size: 0.9rem;
+    color: var(--marked-ink);
+    opacity: 0.65;
+  }
+  .status {
+    margin-top: 16px;
+    font-size: 0.88rem;
+    text-align: center;
+    min-height: 1.4em;
+    font-weight: 600;
+    color: var(--accent-dark);
+  }
+  .score {
+    font-size: 0.78rem;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+  .bingo-banner {
+    margin-top: 6px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--marked);
+    text-align: center;
+    animation: pop 0.4s ease;
+    display: none;
+  }
+  .bingo-banner.show { display: block; }
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  footer {
+    margin-top: 22px;
+    font-size: 0.7rem;
+    opacity: 0.55;
+    text-align: center;
+    max-width: 440px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🦌 Hochwildpark-Bingo</h1>
+<div class="subtitle">Tippe ein Feld an, sobald ihr es unterwegs entdeckt habt. Grün = häufig, Blau = mittel, Orange = selten (bringt mehr Punkte). Euer Fortschritt bleibt gespeichert, auch wenn das Handy zwischendurch einschläft.</div>
+
+<div class="legend">
+  <span><span class="dot common"></span>Häufig · 1 Pkt</span>
+  <span><span class="dot uncommon"></span>Mittel · 2 Pkt</span>
+  <span><span class="dot rare"></span>Selten · 3 Pkt</span>
+</div>
+
+<div class="controls">
+  <button id="newCardBtn">🔀 Neue Karte</button>
+  <button id="resetBtn" class="secondary">↺ Zurücksetzen</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="bingo-banner" id="bingoBanner">🎉 BINGO! 🎉</div>
+<div class="status" id="status"></div>
+<div class="score" id="score"></div>
+
+<footer>Freifeld zählt automatisch. Nochmal antippen entfernt ein Feld wieder. „Neue Karte“ startet komplett neu.</footer>
+
+<script>
+// Rarity pools based on how likely a sighting/activity actually is in an ~80ha park
+// with mixed enclosures and open observation stands.
+const COMMON = [
+  { icon: "🦌", label: "Rothirsch" },
+  { icon: "🦌", label: "Damhirsch" },
+  { icon: "🐗", label: "Wildschwein" },
+  { icon: "🐰", label: "Kaninchen" },
+  { icon: "🫏", label: "Esel" },
+  { icon: "🐴", label: "Pony" },
+  { icon: "🌳", label: "Birke entdeckt" },
+  { icon: "🌳", label: "Buche entdeckt" },
+  { icon: "🌰", label: "Eiche entdeckt" },
+  { icon: "🛝", label: "Spielplatz besucht" },
+  { icon: "🔥", label: "Grillplatz gesehen" },
+  { icon: "🐾", label: "Tierspur im Boden" },
+  { icon: "🐦", label: "Vogelgezwitscher gehört" },
+  { icon: "📸", label: "Tierfoto gemacht" }
+];
+
+const UNCOMMON = [
+  { icon: "🐑", label: "Mufflon" },
+  { icon: "🐂", label: "Auerochse / Steppenrind" },
+  { icon: "🐐", label: "Zwergziege" },
+  { icon: "🐾", label: "Streichelzoo-Tier berührt" },
+  { icon: "👀", label: "Tier von Beobachtungstribüne aus gesehen" },
+  { icon: "🍦", label: "Snack am Kiosk geholt" },
+  { icon: "🎡", label: "Autoscooter gefahren" },
+  { icon: "🍔", label: "Im Wildparkrestaurant gegessen" },
+  { icon: "🐗", label: "Ganze Wildschweinrotte im Schlamm" },
+  { icon: "🥾", label: "Ganzen Rundweg gelaufen" }
+];
+
+const RARE = [
+  { icon: "🫎", label: "Elch" },
+  { icon: "🦙", label: "Lama" },
+  { icon: "🐐", label: "Steinbock" },
+  { icon: "🦌", label: "Jungtier (Kitz/Frischling)" },
+  { icon: "🍃", label: "Tier ganz nah beim Fressen" },
+  { icon: "🤼", label: "Zwei Tiere raufen/spielen gesehen" },
+  { icon: "🦅", label: "Wildvogel im Flug beobachtet" },
+  { icon: "🪨", label: "Katzensteine gesehen" },
+  { icon: "🌿", label: "Schavener Heide gesehen" },
+  { icon: "🦔", label: "Kleintier im Unterholz entdeckt" }
+];
+
+const RARITY_META = {
+  common:   { points: 1 },
+  uncommon: { points: 2 },
+  rare:     { points: 3 }
+};
+
+const STORAGE_KEY = "hochwildpark-bingo-v1";
+let cardItems = [];
+let markedSet = new Set();
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      cardItems,
+      marked: [...markedSet]
+    }));
+  } catch (e) {
+    // storage unavailable, game still works in-memory
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.cardItems) || parsed.cardItems.length !== 16) return false;
+    cardItems = parsed.cardItems;
+    markedSet = new Set(parsed.marked || [5]);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function buildCard() {
+  // 8 häufig, 5 mittel, 2 selten + 1 Freifeld = 16 Felder
+  const chosen = [
+    ...shuffle(COMMON).slice(0, 8).map(i => ({ ...i, rarity: "common" })),
+    ...shuffle(UNCOMMON).slice(0, 5).map(i => ({ ...i, rarity: "uncommon" })),
+    ...shuffle(RARE).slice(0, 2).map(i => ({ ...i, rarity: "rare" }))
+  ];
+  const shuffled = shuffle(chosen);
+  const withFree = [...shuffled];
+  withFree.splice(5, 0, { icon: "🌲", label: "Freifeld", free: true });
+  cardItems = withFree;
+  markedSet = new Set([5]);
+  saveState();
+  render();
+}
+
+function rarityLabel(r) {
+  if (r === "rare") return "★★★";
+  if (r === "uncommon") return "★★";
+  if (r === "common") return "★";
+  return "";
+}
+
+function render() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  cardItems.forEach((item, idx) => {
+    const cell = document.createElement('div');
+    const rarityClass = item.free ? 'free' : item.rarity;
+    cell.className = 'cell ' + rarityClass + (markedSet.has(idx) ? ' marked' : '');
+    const badge = item.free ? '' : `<div class="rarity-badge">${rarityLabel(item.rarity)}</div>`;
+    cell.innerHTML = `${badge}<div class="icon">${item.icon}</div><div class="label">${item.label}</div>`;
+    if (!item.free) {
+      cell.addEventListener('click', () => toggle(idx));
+    }
+    grid.appendChild(cell);
+  });
+  checkBingo();
+}
+
+function toggle(idx) {
+  if (markedSet.has(idx)) {
+    markedSet.delete(idx);
+  } else {
+    markedSet.add(idx);
+  }
+  saveState();
+  render();
+}
+
+function computeScore() {
+  let score = 0;
+  cardItems.forEach((item, idx) => {
+    if (markedSet.has(idx) && !item.free && item.rarity) {
+      score += RARITY_META[item.rarity].points;
+    }
+  });
+  return score;
+}
+
+function checkBingo() {
+  const size = 4;
+  const lines = [];
+  for (let r = 0; r < size; r++) lines.push([0,1,2,3].map(c => r*size + c));
+  for (let c = 0; c < size; c++) lines.push([0,1,2,3].map(r => r*size + c));
+  lines.push([0,5,10,15]);
+  lines.push([3,6,9,12]);
+
+  const won = lines.some(line => line.every(i => markedSet.has(i)));
+  const banner = document.getElementById('bingoBanner');
+  const status = document.getElementById('status');
+  const score = document.getElementById('score');
+
+  banner.classList.toggle('show', won);
+  status.textContent = `${markedSet.size} von 16 Feldern markiert`;
+  score.textContent = `Punkte: ${computeScore()}`;
+}
+
+document.getElementById('newCardBtn').addEventListener('click', buildCard);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  markedSet = new Set([5]);
+  saveState();
+  render();
+});
+
+if (!loadState()) {
+  buildCard();
+} else {
+  render();
+}
+</script>
+</body>
+</html>
